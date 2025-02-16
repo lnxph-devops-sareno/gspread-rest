@@ -3,6 +3,9 @@ from pydantic import BaseModel, Field
 from typing import List
 import gspread
 from google.oauth2.service_account import Credentials
+import os
+import json
+import base64
 
 app = FastAPI(
     title="Google Sheets API",
@@ -24,12 +27,17 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive"  # Needed to list spreadsheets in Drive
 ]
 
-SERVICE_ACCOUNT_FILE = "./afterspendcalorietracker-2e4c92dc90c7.json"
+# Load the base64-encoded service account JSON from an environment variable
+service_account_b64 = os.environ.get("SERVICE_ACCOUNT_B64")
+if not service_account_b64:
+    raise Exception("Environment variable SERVICE_ACCOUNT_B64 not found.")
 
-creds = Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, 
-    scopes=SCOPES
-)
+# Decode the base64 string and load the JSON into a dict
+service_account_info = json.loads(base64.b64decode(service_account_b64))
+
+# Create credentials from the service account info
+creds = Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
+
 gc = gspread.authorize(creds)
 
 # -------------------------------------------------------------------
